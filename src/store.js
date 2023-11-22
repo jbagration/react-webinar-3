@@ -3,10 +3,12 @@
  */
 class Store {
   constructor(initState = {}) {
-    this.state = initState;
+    this.state = {
+      ...initState,
+      lastAddedCode: 0, // Добавляем поле для хранения последнего добавленного кода
+    };
     this.listeners = []; // Слушатели изменений состояния
   }
-
   /**
    * Подписка слушателя на изменения состояния
    * @param listener {Function}
@@ -17,7 +19,7 @@ class Store {
     // Возвращается функция для удаления добавленного слушателя
     return () => {
       this.listeners = this.listeners.filter(item => item !== listener);
-    }
+    };
   }
 
   /**
@@ -42,12 +44,36 @@ class Store {
    * Добавление новой записи
    */
   addItem() {
+    const newCode = this.generateUniqueCode();
+
+    const newList = [...this.state.list, { code: newCode, title: 'Новая запись' }];
+
     this.setState({
       ...this.state,
-      list: [...this.state.list, {code: this.state.list.length + 1, title: 'Новая запись'}]
-    })
-  };
+      list: newList,
+      lastAddedCode: newCode, // Обновляем последнее добавленное число
+    });
+  }
 
+  /**
+   * Генерация уникального кода для новой записи
+   * @returns {number}
+   */
+  generateUniqueCode() {
+    // Если есть последнее добавленное число, используем его + 1
+    if (this.state.lastAddedCode) {
+      return this.state.lastAddedCode + 1;
+    }
+
+    // Если список не пуст, начинаем с максимального кода в списке + 1
+    if (this.state.list.length > 0) {
+      const maxCode = Math.max(...this.state.list.map(item => item.code));
+      return maxCode + 1;
+    }
+
+    // В противном случае, начинаем с 1
+    return 1;
+  }
   /**
    * Удаление записи по коду
    * @param code
@@ -55,9 +81,9 @@ class Store {
   deleteItem(code) {
     this.setState({
       ...this.state,
-      list: this.state.list.filter(item => item.code !== code)
-    })
-  };
+      list: this.state.list.filter(item => item.code !== code),
+    });
+  }
 
   /**
    * Выделение записи по коду
@@ -67,12 +93,15 @@ class Store {
     this.setState({
       ...this.state,
       list: this.state.list.map(item => {
-        if (item.code === code) {
-          item.selected = !item.selected;
+        if (item.code === code && !item.selected) {
+          item.selected = true;
+          item.highlightCount = (item.highlightCount || 0) + 1;
+        } else {
+          item.selected = false;
         }
         return item;
-      })
-    })
+      }),
+    });
   }
 }
 
